@@ -47,7 +47,7 @@ public class SistemadecitasView extends Composite<VerticalLayout> {
         routerLink.setText("Creadores");
         routerLink.setRoute(SistemadecitasView.class);
         getContent().setAlignSelf(FlexComponent.Alignment.CENTER, routerLink);
-        routerLink.setWidth("min-content");
+        routerLink.setId("min-content");
         avatarItem.setWidth("min-content");
         setAvatarItemSampleData(avatarItem);
         avatarItem2.setWidth("min-content");
