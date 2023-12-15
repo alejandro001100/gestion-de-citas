@@ -1,57 +1,68 @@
 package com.example.application.views.crearcita;
 
-import com.example.application.views.MainLayout;
-import com.vaadin.flow.component.Composite;
+import com.example.application.data.entity.Cita;
+import com.example.application.data.entity.Paciente;
+import com.example.application.data.entity.Doctor;
+import com.example.application.data.service.CitaService;
+import com.example.application.data.service.PacienteService;
+import com.example.application.data.service.DoctorService;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
-import com.vaadin.flow.component.dependency.Uses;
-import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import java.util.ArrayList;
+import com.vaadin.flow.component.notification.Notification;
+import com.example.application.views.layout.MainLayout;
+
+
 import java.util.List;
 
-@PageTitle("Crear Cita")
 @Route(value = "crear-cita", layout = MainLayout.class)
-@Uses(Icon.class)
-public class CrearCitaView extends Composite<VerticalLayout> {
+@PageTitle("Crear Cita")
+public class CrearCitaView extends VerticalLayout {
 
-    public CrearCitaView() {
-        TextField textField = new TextField();
-        DateTimePicker dateTimePicker = new DateTimePicker();
-        Select select = new Select();
-        Select select2 = new Select();
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
-        textField.setLabel("Cedula");
-        textField.setWidth("min-content");
-        dateTimePicker.setLabel("Fecha");
-        dateTimePicker.setWidth("min-content");
-        select.setLabel("Doctor");
-        select.setWidth("min-content");
-        setSelectSampleData(select);
-        select2.setLabel("Especialidad");
-        select2.setWidth("min-content");
-        setSelectSampleData(select2);
-        getContent().add(textField);
-        getContent().add(dateTimePicker);
-        getContent().add(select);
-        getContent().add(select2);
+    private DateTimePicker fechaHoraPicker = new DateTimePicker("Fecha y hora de la cita");
+    private ComboBox<Paciente> pacienteComboBox = new ComboBox<>("Paciente");
+    private ComboBox<Doctor> doctorComboBox = new ComboBox<>("Doctor");
+    private Button saveButton = new Button("Guardar cita");
+
+    private final CitaService citaService;
+    private final PacienteService pacienteService;
+    private final DoctorService doctorService;
+
+    public CrearCitaView(CitaService citaService, PacienteService pacienteService, DoctorService doctorService) {
+        this.citaService = citaService;
+        this.pacienteService = pacienteService;
+        this.doctorService = doctorService;
+
+        // Configura los ComboBox con los datos de los pacientes y doctores
+        pacienteComboBox.setItems(pacienteService.findAll());
+        pacienteComboBox.setItemLabelGenerator(Paciente::getNombreCompleto); // Asumiendo que hay un método getNombreCompleto en Paciente
+
+        doctorComboBox.setItems(doctorService.findAll());
+        doctorComboBox.setItemLabelGenerator(Doctor::getNombreCompleto); // Asumiendo que hay un método getNombreCompleto en Doctor
+        saveButton.addClickListener(e -> saveCita());
+
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(fechaHoraPicker, pacienteComboBox, doctorComboBox, saveButton);
+
+        add(formLayout);
     }
 
-    record SampleItem(String value, String label, Boolean disabled) {
-    }
+    private void saveCita() {
+        Cita cita = new Cita();
+        cita.setFechaHora(fechaHoraPicker.getValue());
+        cita.setPaciente(pacienteComboBox.getValue());
+        cita.setDoctor(doctorComboBox.getValue());
 
-    private void setSelectSampleData(Select select) {
-        List<SampleItem> sampleItems = new ArrayList<>();
-        sampleItems.add(new SampleItem("first", "First", null));
-        sampleItems.add(new SampleItem("second", "Second", null));
-        sampleItems.add(new SampleItem("third", "Third", Boolean.TRUE));
-        sampleItems.add(new SampleItem("fourth", "Fourth", null));
-        select.setItems(sampleItems);
-        select.setItemLabelGenerator(item -> ((SampleItem) item).label());
-        select.setItemEnabledProvider(item -> !Boolean.TRUE.equals(((SampleItem) item).disabled()));
+
+        try {
+            citaService.save(cita);
+            Notification.show("Cita guardada con éxito");
+        } catch (Exception e) {
+            Notification.show("Error al guardar la cita: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+        }
     }
 }

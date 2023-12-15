@@ -1,70 +1,78 @@
 package com.example.application.views.paciente;
 
-import com.example.application.views.MainLayout;
-import com.vaadin.flow.component.Composite;
+import com.example.application.data.entity.Paciente;
+import com.example.application.data.service.PacienteService;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.data.binder.Binder;
+import com.example.application.views.layout.MainLayout;
 
-@PageTitle("Paciente")
-@Route(value = "paciente", layout = MainLayout.class)
-@Uses(Icon.class)
-public class PacienteView extends Composite<VerticalLayout> {
+@Route(value = "pacientes", layout = MainLayout.class)
+@PageTitle("Pacientes")
+public class PacienteView extends VerticalLayout {
 
-    public PacienteView() {
-        VerticalLayout layoutColumn2 = new VerticalLayout();
-        H3 h3 = new H3();
-        FormLayout formLayout2Col = new FormLayout();
-        TextField textField = new TextField();
-        TextField textField2 = new TextField();
-        TextField textField3 = new TextField();
-        TextField textField4 = new TextField();
-        HorizontalLayout layoutRow = new HorizontalLayout();
-        Button buttonPrimary = new Button();
-        Button buttonSecondary = new Button();
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
-        getContent().setJustifyContentMode(JustifyContentMode.START);
-        getContent().setAlignItems(Alignment.CENTER);
-        layoutColumn2.setWidth("100%");
-        layoutColumn2.setMaxWidth("800px");
-        layoutColumn2.setHeight("min-content");
-        h3.setText("Ingresa los datos Paciente");
-        h3.setWidth("100%");
-        formLayout2Col.setWidth("100%");
-        textField.setLabel("Nombre");
-        textField2.setLabel("Apellido");
-        textField3.setLabel("Cedula");
-        textField4.setLabel("Edad");
-        textField4.setWidth("min-content");
-        layoutRow.addClassName(Gap.MEDIUM);
-        layoutRow.setWidth("100%");
-        layoutRow.getStyle().set("flex-grow", "1");
-        buttonPrimary.setText("Save");
-        buttonPrimary.setWidth("min-content");
-        buttonPrimary.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        buttonSecondary.setText("Cancel");
-        buttonSecondary.setWidth("min-content");
-        getContent().add(layoutColumn2);
-        layoutColumn2.add(h3);
-        layoutColumn2.add(formLayout2Col);
-        formLayout2Col.add(textField);
-        formLayout2Col.add(textField2);
-        formLayout2Col.add(textField3);
-        formLayout2Col.add(textField4);
-        layoutColumn2.add(layoutRow);
-        layoutRow.add(buttonPrimary);
-        layoutRow.add(buttonSecondary);
+    private final PacienteService pacienteService;
+    private Grid<Paciente> grid = new Grid<>(Paciente.class);
+    private TextField nombre = new TextField("Nombre");
+    private TextField apellido = new TextField("Apellido");
+    private TextField cedula = new TextField("Cédula");
+    private TextField edad = new TextField("Edad");
+    private Button saveButton = new Button("Guardar");
+    private Binder<Paciente> binder = new Binder<>(Paciente.class);
+
+    public PacienteView(PacienteService pacienteService) {
+        this.pacienteService = pacienteService;
+        addClassName("paciente-view");
+        setSizeFull();
+        configureGrid();
+        configureForm();
+
+        add(grid, createFormLayout());
+        updateList();
+        binder.bindInstanceFields(this);
     }
+
+    private void configureGrid() {
+        grid.addClassName("paciente-grid");
+        grid.setSizeFull();
+        grid.setColumns("nombre", "apellido", "cedula", "edad");
+        grid.getColumns().forEach(col -> col.setAutoWidth(true));
+        grid.asSingleSelect().addValueChangeListener(event ->
+                populateForm(event.getValue()));
+    }
+
+    private void configureForm() {
+        binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
+        saveButton.addClickListener(click -> savePaciente());
+    }
+
+    private FormLayout createFormLayout() {
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(nombre, apellido, cedula, edad, saveButton);
+        return formLayout;
+    }
+
+    private void populateForm(Paciente paciente) {
+        binder.setBean(paciente);
+    }
+
+    private void savePaciente() {
+        Paciente paciente = binder.getBean();
+        Paciente savedPaciente = pacienteService.save(paciente); // Guarda el paciente y obtiene el resultado
+        updateList();
+        Notification.show("Paciente guardado.");
+    }
+
+    private void updateList() {
+        grid.setItems(pacienteService.findAll());
+
+    }
+
 }
+
